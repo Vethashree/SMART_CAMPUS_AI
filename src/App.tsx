@@ -1,62 +1,44 @@
-import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
-import AppShell from './components/layout/AppShell';
-import { SupportRequestProvider } from './features/support/SupportRequestContext';
-
-import LandingPage from './features/support/pages/LandingPage';
-import AccessModePage from './features/support/pages/AccessModePage';
-import LanguagePage from './features/support/pages/LanguagePage';
-import AccessibilityPreferencesPage from './features/support/pages/AccessibilityPreferencesPage';
-import RequestPage from './features/support/pages/RequestPage';
-import ClassificationPage from './features/support/pages/ClassificationPage';
-import RoutingExplanationPage from './features/support/pages/RoutingExplanationPage';
-import PrivacyConsentPage from './features/support/pages/PrivacyConsentPage';
-import ConfirmationPage from './features/support/pages/ConfirmationPage';
-
-import TrackingPage from './features/tickets/pages/TrackingPage';
-import TicketDetailPage from './features/tickets/pages/TicketDetailPage';
-
-import AssistedSupportPage from './features/assisted/pages/AssistedSupportPage';
-import StaffDashboardPage from './features/staff/pages/StaffDashboardPage';
-import ImpactPage from './features/impact/pages/ImpactPage';
-
-function SupportFlow() {
-  return (
-    <SupportRequestProvider>
-      <Outlet />
-    </SupportRequestProvider>
-  );
-}
+import { Routes, Route } from 'react-router-dom';
+import CampusShell from './layouts/CampusShell';
+import DashboardPage from './pages/DashboardPage';
+import AIAssistantPage from './pages/AIAssistantPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import StudyTrackerPage from './pages/StudyTrackerPage';
+import SmartLibraryPage from './pages/SmartLibraryPage';
+import CampusNoticesPage from './pages/CampusNoticesPage';
+import OptimizeSchedulePage from './pages/OptimizeSchedulePage';
+import PreferencesPage from './pages/PreferencesPage';
+import {
+  AttendancePage,
+  CareerPredictionPage,
+  CGPAPage,
+  SecurityPage,
+  TestMarksPage,
+  TimetablePage,
+} from './pages/ExistingModulePages';
+import PersonaRoutes from './persona/PersonaRoutes';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<AppShell />}>
-          <Route path="/" element={<LandingPage />} />
-
-          <Route path="/support" element={<SupportFlow />}>
-            <Route index element={<Navigate to="access-mode" replace />} />
-            <Route path="access-mode" element={<AccessModePage />} />
-            <Route path="language" element={<LanguagePage />} />
-            <Route path="accessibility" element={<AccessibilityPreferencesPage />} />
-            <Route path="request" element={<RequestPage />} />
-            <Route path="classification" element={<ClassificationPage />} />
-            <Route path="routing" element={<RoutingExplanationPage />} />
-            <Route path="privacy" element={<PrivacyConsentPage />} />
-            <Route path="confirmation" element={<ConfirmationPage />} />
-          </Route>
-
-          <Route path="/track" element={<TrackingPage />} />
-          <Route path="/track/:ticketId" element={<TicketDetailPage />} />
-
-          <Route path="/assisted" element={<AssistedSupportPage />} />
-          <Route path="/staff" element={<StaffDashboardPage />} />
-          <Route path="/impact" element={<ImpactPage />} />
-
-          <Route path="*" element={<LandingPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route element={<CampusShell />}>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/assistant" element={<AIAssistantPage />} />
+        <Route path="/attendance" element={<AttendancePage />} />
+        <Route path="/timetable" element={<TimetablePage />} />
+        <Route path="/timetable/optimize" element={<OptimizeSchedulePage />} />
+        <Route path="/test-marks" element={<TestMarksPage />} />
+        <Route path="/security" element={<SecurityPage />} />
+        <Route path="/career-prediction" element={<CareerPredictionPage />} />
+        <Route path="/cgpa-calculator" element={<CGPAPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/study" element={<StudyTrackerPage />} />
+        <Route path="/library" element={<SmartLibraryPage />} />
+        <Route path="/notices" element={<CampusNoticesPage />} />
+        <Route path="/preferences" element={<PreferencesPage />} />
+      </Route>
+      <Route path="/persona/*" element={<PersonaRoutes />} />
+    </Routes>
   );
 }
 

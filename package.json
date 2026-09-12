@@ -1,14 +1,14 @@
 {
-  "name": "inclusive-campus-support",
+  "name": "sera-campus-concierge",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Accessibility-first, multilingual and offline-capable campus support service that routes any student request to the correct department, with a human-assisted fallback and full request tracking.",
-  "keywords": ["accessibility", "campus-support", "civic-tech", "react", "typescript", "aws", "offline-first"],
+  "description": "SERA (Student Experience & Resource Assistant) — an adaptive campus concierge combining Smart Campus AI's academic tools with Persona Health's wellness assessment, turning student context into an explainable, prioritized list of next actions.",
+  "keywords": ["ai", "campus-management", "education", "react", "typescript", "smart-campus", "wellness", "concierge"],
   "author": "Kirishipathi",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kirishipathi/SMART_CAMPUS_AI.git"
+    "url": "https://github.com/Vethashree/SMART_CAMPUS_AI_FINAL.git"
   },
   "scripts": {
     "dev": "vite",
@@ -19,13 +19,22 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "lucide-react": "^0.344.0",
+    "@supabase/supabase-js": "^2.76.1",
+    "@tanstack/react-query": "^5.83.0",
+    "date-fns": "^3.6.0",
+    "lucide-react": "^0.462.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2"
+    "react-hook-form": "^7.61.1",
+    "react-router-dom": "^6.30.1",
+    "recharts": "^2.15.4",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@types/node": "^22.16.5",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
@@ -33,7 +42,6 @@
     "eslint": "^9.9.1",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",
-    "fake-indexeddb": "^6.0.0",
     "globals": "^15.9.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.4.35",
@@ -41,6 +49,6 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.3.0",
     "vite": "^5.4.2",
-    "vitest": "^2.1.9"
+    "vitest": "^2.1.8"
   }
 }

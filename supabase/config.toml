@@ -1,0 +1,37 @@
+project_id = "bevmqzshzwddpzhmnvyq"
+
+# GitHub OAuth Provider Configuration
+[auth.external.github]
+enabled = true
+client_id = "${GITHUB_CLIENT_ID}"
+secret = "${GITHUB_CLIENT_SECRET}"
+
+# Google OAuth Provider Configuration
+[auth.external.google]
+enabled = true
+client_id = "${GOOGLE_CLIENT_ID}"
+secret = "${GOOGLE_CLIENT_SECRET}"
+
+# Auth settings
+[auth]
+enable_signup = true
+enable_anonymous_sign_ins = false
+jwt_expiry_limit = 3600
+refresh_token_rotation_enabled = true
+refresh_token_reuse_interval = 10
+enable_refresh_token_rotation = true
+mfa_phone_enabled = false
+mfa_factor_max_age = 82800
+session_timeout_in_seconds = 3600
+rate_limit_token_refresh = "15"
+rate_limit_authentication = "15"
+
+# Email Auth Provider
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+double_confirm_changes = false
+enable_recovery = true
+
+[functions.sera-chat]
+verify_jwt = true

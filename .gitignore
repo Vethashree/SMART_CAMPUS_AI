@@ -42,6 +42,12 @@ node_modules/
 # Testing
 coverage/
 
+# CDK
+cdk.out/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
 # Misc
 .DS_Store
 .env.local
@@ -57,9 +63,3 @@ coverage/
 
 # OS generated files
 Thumbs.db
-
-# CDK
-cdk.out/
-infra/dist/
-infra/outputs.json
-*.tsbuildinfo
