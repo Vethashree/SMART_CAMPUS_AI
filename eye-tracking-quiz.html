@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eye Tracking Math Quiz</title>
+<style>
+/* --- Styles for Quiz --- */
+* { box-sizing: border-box; margin:0; padding:0; font-family: 'Segoe UI', sans-serif; }
+body { background: linear-gradient(135deg,#1a2a6c,#b21f1f,#fdbb2d); color:#fff; min-height:100vh; display:flex; justify-content:center; align-items:center; padding:20px; }
+.quiz-container { background: rgba(0,0,0,0.7); border-radius:15px; width:100%; max-width:700px; padding:30px; position:relative; overflow:hidden; }
+.quiz-header { text-align:center; margin-bottom:30px; }
+.quiz-title { font-size:2.5rem; color:#fff; margin-bottom:10px; text-shadow:0 2px 4px rgba(0,0,0,0.3);}
+.quiz-subtitle { font-size:1.1rem; color:#fdbb2d; margin-bottom:20px; }
+.progress-container { width:100%; height:10px; background: rgba(255,255,255,0.2); border-radius:5px; margin-bottom:30px; }
+.progress-bar { height:100%; background:#fdbb2d; width:0%; transition: width 0.5s ease; }
+.camera-permission { text-align:center; padding:20px; background: rgba(255,255,255,0.1); border-radius:10px; margin-bottom:20px; }
+.permission-btn { background:#4caf50; color:white; border:none; border-radius:5px; padding:10px 20px; cursor:pointer; margin-top:15px; transition:0.3s; }
+.permission-btn:disabled { background:#ccc; cursor:not-allowed; }
+.hidden { display:none; }
+.camera-container { position:relative; width:100%; max-width:400px; margin:0 auto 30px; border-radius:10px; overflow:hidden; background:#000; }
+#video { width:100%; transform: scaleX(-1); }
+.eye-indicator { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; pointer-events:none; }
+.eye-direction { font-size:3rem; opacity:0; transition:opacity 0.3s; }
+.eye-direction.active { opacity:1; }
+.quiz-content { display:none; }
+.question-text { font-size:1.8rem; margin-bottom:25px; text-align:center; padding:15px; background: rgba(255,255,255,0.1); border-radius:10px; }
+.options-container { display:grid; grid-template-columns:repeat(2,1fr); gap:15px; margin-bottom:30px; }
+.option { background: rgba(255,255,255,0.1); border-radius:10px; padding:15px; cursor:pointer; display:flex; align-items:center; transition:all 0.3s ease; }
+.option.selected { background: rgba(253,187,45,0.3); transform:scale(1.03); }
+.option-letter { background:#fdbb2d; color:#000; width:30px; height:30px; border-radius:50%; display:flex; justify-content:center; align-items:center; margin-right:15px; }
+.result-container { display:none; text-align:center; }
+.result-score { font-size:3rem; margin-bottom:30px; }
+.result-details { text-align:left; }
+.result-question { margin-bottom:15px; padding:15px; background: rgba(255,255,255,0.1); border-radius:10px; }
+.correct { color:#4caf50; }
+.incorrect { color:#f44336; }
+.restart-btn { background:#fdbb2d; color:#000; border:none; border-radius:30px; padding:12px 30px; font-size:1.1rem; cursor:pointer; transition:all 0.3s ease; }
+.restart-btn:hover { background:#ffcc33; transform:scale(1.05); }
+.status-message { text-align:center; margin:20px 0; padding:10px; border-radius:5px; background: rgba(255,255,255,0.1); display:none; }
+.next-btn { background:#2196f3; color:white; border:none; border-radius:5px; padding:12px 30px; font-size:1.1rem; cursor:pointer; transition:all 0.3s ease; margin:20px auto; display:none; }
+.next-btn:hover { background:#0d8aee; }
+.answer-feedback { margin:15px 0; padding:10px; border-radius:5px; background: rgba(255,255,255,0.1); display:none; }
+.congrats-message { text-align:center; margin:30px 0; padding:20px; background: rgba(76,175,80,0.2); border-radius:15px; border:2px solid #4caf50; }
+.congrats-title { font-size:2.2rem; color:#4caf50; margin-bottom:15px; }
+.congrats-text { font-size:1.2rem; margin-bottom:10px; }
+.congrats-emoji { font-size:3rem; margin-bottom:15px; }
+.sensitivity-control { margin:20px 0; text-align:center; }
+.sensitivity-slider { width:80%; max-width:300px; margin:10px auto; display:block; }
+@media(max-width:600px){ .options-container { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="quiz-container">
+  <div class="quiz-header">
+    <h1 class="quiz-title">Eye Tracking Math Quiz</h1>
+    <p class="quiz-subtitle">Use your eyes or buttons to select answers</p>
+    <div class="progress-container">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+  </div>
+
+  <!-- Camera Permission -->
+  <div class="camera-permission" id="camera-permission">
+    <h2>Camera Access Required</h2>
+    <p>Please allow camera access to continue.</p>
+    <button class="permission-btn" id="start-camera">Enable Camera</button>
+    <div class="sensitivity-control">
+      <label for="sensitivity">Eye Tracking Sensitivity:</label>
+      <input type="range" id="sensitivity" class="sensitivity-slider" min="1" max="10" value="5">
+      <span id="sensitivity-value">5</span>
+    </div>
+    <div class="alternative-controls" style="margin-top:20px;">
+      <button class="permission-btn" id="left-btn">← Left</button>
+      <button class="permission-btn" id="right-btn">→ Right</button>
+      <button class="permission-btn" id="select-btn">✓ Select</button>
+    </div>
+  </div>
+
+  <!-- Video -->
+  <div class="camera-container hidden" id="camera-container">
+    <video id="video" autoplay muted></video>
+    <div class="eye-indicator">
+      <div class="eye-direction" id="eye-left">←</div>
+      <div class="eye-direction" id="eye-right">→</div>
+      <div class="eye-direction" id="eye-blink">✓</div>
+    </div>
+  </div>
+
+  <div class="status-message" id="status-message">
+    Look left/right to move selection, blink to select
+  </div>
+
+  <!-- Quiz Content -->
+  <div class="quiz-content" id="quiz-content">
+    <div class="question-text" id="question-text"></div>
+    <div class="options-container" id="options-container"></div>
+    <div class="answer-feedback" id="answer-feedback"></div>
+    <button class="next-btn" id="next-btn">Next Question</button>
+  </div>
+
+  <!-- Result -->
+  <div class="result-container" id="result-container">
+    <h2>Quiz Results</h2>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-details" id="result-details"></div>
+    
+    <!-- Congratulations Message -->
+    <div class="congrats-message" id="congrats-message">
+      <div class="congrats-emoji" id="congrats-emoji">🎉</div>
+      <div class="congrats-title" id="congrats-title">Congratulations!</div>
+      <div class="congrats-text" id="congrats-text"></div>
+    </div>
+    
+    <button class="restart-btn" id="restart-btn">Restart Quiz</button>
+  </div>
+</div>
+
+<script>
+// --- Quiz Data ---
+const QUESTIONS = [
+  { question:"15 + 27 ?", options:["42","41","43","40"], answer:"A"},
+  { question:"8 × 7 ?", options:["54","56","58","52"], answer:"B"},
+  { question:"144 ÷ 12 ?", options:["10","11","12","13"], answer:"C"},
+  { question:"5² ?", options:["20","25","30","35"], answer:"B"},
+  { question:"√64 ?", options:["6","7","8","9"], answer:"C"}
+];
+
+// --- State ---
+let currentQuestion=0, selectedOption=0, userAnswers=[], quizStarted=false, eyeTrackingActive=false, cameraStream=null;
+let sensitivity = 5; // Default sensitivity (1-10)
+let eyeDirectionTimer=null;
+let lastDirection = null;
+let directionCount = 0;
+let selectionConfirmed = false;
+
+// --- DOM ---
+const cameraPermission=document.getElementById('camera-permission');
+const startCameraBtn=document.getElementById('start-camera');
+const leftBtn=document.getElementById('left-btn');
+const rightBtn=document.getElementById('right-btn');
+const selectBtn=document.getElementById('select-btn');
+const sensitivitySlider=document.getElementById('sensitivity');
+const sensitivityValue=document.getElementById('sensitivity-value');
+const cameraContainer=document.getElementById('camera-container');
+const video=document.getElementById('video');
+const eyeLeft=document.getElementById('eye-left');
+const eyeRight=document.getElementById('eye-right');
+const eyeBlink=document.getElementById('eye-blink');
+const statusMessage=document.getElementById('status-message');
+const questionText=document.getElementById('question-text');
+const optionsContainer=document.getElementById('options-container');
+const progressBar=document.getElementById('progress-bar');
+const quizContent=document.getElementById('quiz-content');
+const nextBtn=document.getElementById('next-btn');
+const answerFeedback=document.getElementById('answer-feedback');
+const resultContainer=document.getElementById('result-container');
+const resultScore=document.getElementById('result-score');
+const resultDetails=document.getElementById('result-details');
+const restartBtn=document.getElementById('restart-btn');
+const congratsMessage=document.getElementById('congrats-message');
+const congratsEmoji=document.getElementById('congrats-emoji');
+const congratsTitle=document.getElementById('congrats-title');
+const congratsText=document.getElementById('congrats-text');
+
+// --- Sensitivity Control ---
+sensitivitySlider.addEventListener('input', function() {
+    sensitivity = parseInt(this.value);
+    sensitivityValue.textContent = sensitivity;
+});
+
+// --- Camera Access ---
+async function startCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert("Camera not supported");
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"user" } });
+    video.srcObject = stream;
+    cameraStream = stream;
+    cameraContainer.classList.remove('hidden');
+    cameraPermission.classList.add('hidden');
+    video.onloadedmetadata = () => video.play();
+    initQuiz();
+  } catch(err) {
+    alert("Camera access denied or unavailable");
+    console.error(err);
+  }
+}
+
+function stopCamera() {
+  if(cameraStream) cameraStream.getTracks().forEach(track=>track.stop());
+}
+
+// --- Quiz Functions ---
+function initQuiz() {
+  currentQuestion=0; selectedOption=0; userAnswers=[]; quizStarted=true;
+  selectionConfirmed = false;
+  quizContent.style.display="block"; statusMessage.style.display="block";
+  loadQuestion(); updateProgressBar();
+  startEyeTracking();
+}
+
+function loadQuestion() {
+  const q = QUESTIONS[currentQuestion];
+  questionText.textContent = q.question;
+  optionsContainer.innerHTML="";
+  answerFeedback.innerHTML="";
+  answerFeedback.style.display="none";
+  nextBtn.style.display="none";
+  selectionConfirmed = false;
+  
+  q.options.forEach((opt,i)=>{
+    const optionEl=document.createElement('div'); 
+    optionEl.className='option'; 
+    if(i===selectedOption) optionEl.classList.add('selected');
+    
+    const letter=document.createElement('div'); 
+    letter.className='option-letter'; 
+    letter.textContent=String.fromCharCode(65+i);
+    
+    optionEl.appendChild(letter); 
+    optionEl.appendChild(document.createTextNode(opt));
+    optionsContainer.appendChild(optionEl);
+  });
+}
+
+function updateProgressBar() {
+  progressBar.style.width = ((currentQuestion+1)/QUESTIONS.length*100)+'%';
+}
+
+function updateSelectedOption() {
+  document.querySelectorAll('.option').forEach((opt,i)=>{
+    opt.classList.toggle('selected', i===selectedOption);
+  });
+}
+
+function showSelectedAnswer() {
+  if (selectionConfirmed) return;
+  
+  const q = QUESTIONS[currentQuestion];
+  const selectedAnswer = String.fromCharCode(65+selectedOption);
+  const selectedText = q.options[selectedOption];
+  
+  answerFeedback.innerHTML = `
+    <div>You selected: <strong>${selectedAnswer}) ${selectedText}</strong></div>
+  `;
+  answerFeedback.style.display="block";
+  nextBtn.style.display="block";
+  selectionConfirmed = true;
+}
+
+function moveToNextQuestion() {
+  // Record the selected answer
+  userAnswers.push(String.fromCharCode(65+selectedOption));
+  
+  // Move to next question or show results
+  currentQuestion++;
+  if(currentQuestion < QUESTIONS.length){
+    selectedOption=0; 
+    loadQuestion(); 
+    updateProgressBar(); 
+  } else {
+    stopEyeTracking(); 
+    showResults(); 
+  }
+}
+
+function showResults() {
+  quizContent.style.display="none"; 
+  statusMessage.style.display="none"; 
+  resultContainer.style.display="block";
+  
+  let correct=0; 
+  for(let i=0; i<QUESTIONS.length; i++){
+    if(userAnswers[i]===QUESTIONS[i].answer) correct++;
+  }
+  
+  const totalQuestions = QUESTIONS.length;
+  const percentage = Math.round((correct / totalQuestions) * 100);
+  
+  // Display score
+  resultScore.textContent = `${correct} / ${totalQuestions} (${percentage}%)`;
+  
+  // Display detailed results
+  resultDetails.innerHTML="";
+  
+  QUESTIONS.forEach((q,i)=>{
+    const userAnswer = userAnswers[i];
+    const userAnswerText = q.options[parseInt(userAnswer, 16) - 10]; // Convert A,B,C,D to 0,1,2,3
+    const correctAnswerText = q.options[parseInt(q.answer, 16) - 10];
+    const isCorrect = userAnswer === q.answer;
+    
+    const resQ=document.createElement('div'); 
+    resQ.className='result-question';
+    
+    resQ.innerHTML = `
+      <div><b>${i+1}. ${q.question}</b></div>
+      <div>Your answer: <span class="${isCorrect ? 'correct' : 'incorrect'}">${userAnswer}) ${userAnswerText}</span></div>
+      <div>Correct answer: <span class="correct">${q.answer}) ${correctAnswerText}</span></div>
+    `;
+    
+    resultDetails.appendChild(resQ);
+  });
+  
+  // Show congratulations message
+  showCongratulations(correct, totalQuestions, percentage);
+}
+
+function showCongratulations(correct, total, percentage) {
+  // Set emoji based on performance
+  if (percentage === 100) {
+    congratsEmoji.textContent = "🏆";
+    congratsTitle.textContent = "Perfect Score!";
+  } else if (percentage >= 80) {
+    congratsEmoji.textContent = "🎉";
+    congratsTitle.textContent = "Excellent Work!";
+  } else if (percentage >= 60) {
+    congratsEmoji.textContent = "👍";
+    congratsTitle.textContent = "Good Job!";
+  } else if (percentage >= 40) {
+    congratsEmoji.textContent = "👌";
+    congratsTitle.textContent = "Nice Try!";
+  } else {
+    congratsEmoji.textContent = "💪";
+    congratsTitle.textContent = "Keep Practicing!";
+  }
+  
+  // Set personalized message
+  congratsText.textContent = `You scored ${correct} out of ${total} questions correctly (${percentage}%). Great effort!`;
+  
+  // Show the congratulations message
+  congratsMessage.style.display = "block";
+}
+
+// --- Eye Tracking (Improved) ---
+function startEyeTracking() {
+  eyeTrackingActive=true;
+  // Faster checking for better responsiveness
+  eyeDirectionTimer=setInterval(checkEyeDirection, 300);
+}
+
+function stopEyeTracking() { 
+  eyeTrackingActive=false; 
+  if(eyeDirectionTimer) clearInterval(eyeDirectionTimer); 
+}
+
+function checkEyeDirection() {
+  if (!eyeTrackingActive || selectionConfirmed) return;
+  
+  // Simulate eye tracking with more controlled randomness
+  // Higher sensitivity = more likely to detect intended movement
+  const detectionThreshold = 11 - sensitivity; // Invert so higher sensitivity = lower threshold
+  const randomValue = Math.floor(Math.random() * 10) + 1;
+  
+  if (randomValue <= detectionThreshold) {
+    // Only detect movement if it passes the threshold
+    const dirs=['left','right','blink'];
+    const dir=dirs[Math.floor(Math.random()*dirs.length)];
+    
+    // Improved direction confirmation logic
+    if (dir === lastDirection) {
+      directionCount++;
+      // Require multiple detections in the same direction to confirm
+      const confirmThreshold = Math.max(1, 6 - sensitivity); // Higher sensitivity = fewer confirmations needed
+      
+      if (directionCount >= confirmThreshold) {
+        showEyeIndicator(dir); 
+        handleEyeMovement(dir);
+        directionCount = 0; // Reset after confirmation
+        lastDirection = null;
+      }
+    } else {
+      lastDirection = dir;
+      directionCount = 1;
+    }
+  }
+}
+
+function handleEyeMovement(dir){
+  if(dir==='left'){ 
+    selectedOption=(selectedOption-1+QUESTIONS[currentQuestion].options.length)%QUESTIONS[currentQuestion].options.length; 
+    updateSelectedOption(); 
+  }
+  if(dir==='right'){ 
+    selectedOption=(selectedOption+1)%QUESTIONS[currentQuestion].options.length; 
+    updateSelectedOption(); 
+  }
+  if(dir==='blink'){ 
+    showSelectedAnswer();
+  }
+}
+
+function showEyeIndicator(dir){
+  [eyeLeft,eyeRight,eyeBlink].forEach(e=>e.classList.remove('active'));
+  if(dir==='left') eyeLeft.classList.add('active');
+  if(dir==='right') eyeRight.classList.add('active');
+  if(dir==='blink') eyeBlink.classList.add('active');
+  setTimeout(()=>[eyeLeft,eyeRight,eyeBlink].forEach(e=>e.classList.remove('active')),500);
+}
+
+// --- Event Listeners ---
+startCameraBtn.addEventListener('click', startCamera);
+
+leftBtn.addEventListener('click',()=>{
+  showEyeIndicator('left'); 
+  handleEyeMovement('left');
+});
+
+rightBtn.addEventListener('click',()=>{
+  showEyeIndicator('right'); 
+  handleEyeMovement('right');
+});
+
+selectBtn.addEventListener('click',()=>{
+  showEyeIndicator('blink'); 
+  showSelectedAnswer();
+});
+
+nextBtn.addEventListener('click', moveToNextQuestion);
+
+restartBtn.addEventListener('click',()=>{
+  stopEyeTracking(); 
+  stopCamera();
+  cameraPermission.classList.remove('hidden'); 
+  cameraContainer.classList.add('hidden'); 
+  quizContent.style.display='none';
+  statusMessage.style.display='none'; 
+  resultContainer.style.display='none';
+  congratsMessage.style.display='none';
+});
+
+// --- Keyboard fallback ---
+document.addEventListener('keydown',e=>{
+  if(!quizStarted) return;
+  
+  if(e.key==='ArrowLeft'){ 
+    selectedOption=(selectedOption-1+QUESTIONS[currentQuestion].options.length)%QUESTIONS[currentQuestion].options.length; 
+    updateSelectedOption(); 
+    showEyeIndicator('left'); 
+  }
+  
+  if(e.key==='ArrowRight'){ 
+    selectedOption=(selectedOption+1)%QUESTIONS[currentQuestion].options.length; 
+    updateSelectedOption(); 
+    showEyeIndicator('right'); 
+  }
+  
+  if(e.key===' '){ 
+    e.preventDefault(); 
+    showSelectedAnswer();
+    showEyeIndicator('blink'); 
+  }
+  
+  if(e.key==='Enter' && nextBtn.style.display !== 'none') {
+    moveToNextQuestion();
+  }
+});
+</script>
+</body>
+</html>
