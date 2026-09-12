@@ -1,0 +1,20 @@
+{
+  "name": "inclusive-campus-support-backend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Lambda handlers for the Inclusive Campus Support ticket API. Bundled and deployed by infra/ (AWS CDK).",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.658.1",
+    "@aws-sdk/client-sqs": "^3.658.1",
+    "@aws-sdk/lib-dynamodb": "^3.658.1"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^22.7.4",
+    "typescript": "^5.5.3"
+  }
+}

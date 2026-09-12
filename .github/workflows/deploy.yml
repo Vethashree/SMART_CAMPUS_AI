@@ -1,0 +1,65 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write # required for GitHub OIDC -> AWS role assumption
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to AWS
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # No long-lived AWS access keys in CI — this role trusts GitHub's OIDC
+      # provider for this repo only (see infra/README.md for the trust policy).
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
+
+      - run: npm ci
+      - working-directory: backend
+        run: npm ci
+      - working-directory: infra
+        run: npm ci
+
+      # Phase 1: everything except the frontend bucket. The frontend build
+      # needs the API's URL baked in, and the API doesn't exist yet.
+      - name: Deploy data / auth / api / observability stacks
+        working-directory: infra
+        run: |
+          npx cdk deploy \
+            InclusiveCampusSupport-Data \
+            InclusiveCampusSupport-Auth \
+            InclusiveCampusSupport-Api \
+            InclusiveCampusSupport-Observability \
+            --require-approval never \
+            --outputs-file outputs.json
+
+      - name: Read API URL from stack outputs
+        id: api-url
+        working-directory: infra
+        run: |
+          API_URL=$(node -e "console.log(require('./outputs.json')['InclusiveCampusSupport-Api'].ApiUrl)")
+          echo "api_url=$API_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Build frontend against the deployed API
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ steps.api-url.outputs.api_url }}
+
+      # Phase 2: publish the build to S3 / CloudFront now that dist/ exists.
+      - name: Deploy frontend stack
+        working-directory: infra
+        run: npx cdk deploy InclusiveCampusSupport-Frontend --require-approval never
